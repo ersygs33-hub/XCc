@@ -1,0 +1,127 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "viksm Hub",
+   LoadingTitle = "viksm Utilities",
+   LoadingSubtitle = "by Assistant",
+   ConfigurationSaving = { Enabled = false }
+})
+
+local Tab = Window:CreateTab("Player Hacks", 4483362458)
+
+-- Variables
+local speedEnabled = false
+local customWalkSpeed = 50
+local defaultWalkSpeed = 16
+
+local infJumpEnabled = false
+local noclipEnabled = false
+local espEnabled = false
+
+-- 1. วิ่งไว (WalkSpeed)
+Tab:CreateToggle({
+   Name = "เปิดระบบ วิ่งไว",
+   CurrentValue = false,
+   Callback = function(Value)
+      speedEnabled = Value
+      local char = game.Players.LocalPlayer.Character
+      if char and char:FindFirstChild("Humanoid") then
+         char.Humanoid.WalkSpeed = speedEnabled and customWalkSpeed or defaultWalkSpeed
+      end
+   end,
+})
+
+Tab:CreateInput({
+   Name = "ปรับความเร็วการวิ่ง",
+   PlaceholderText = "ใส่ค่าความเร็ว (เช่น 50, 100)",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(Text)
+      local num = tonumber(Text)
+      if num then
+         customWalkSpeed = num
+         if speedEnabled then
+            local char = game.Players.LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+               char.Humanoid.WalkSpeed = customWalkSpeed
+            end
+         end
+      end
+   end,
+})
+
+-- 2. กระโดดไม่จำกัด (Infinite Jump)
+Tab:CreateToggle({
+   Name = "กระโดดไม่จำกัด (Infinite Jump)",
+   CurrentValue = false,
+   Callback = function(Value)
+      infJumpEnabled = Value
+   end,
+})
+
+game:GetService("UserInputService").JumpRequest:Connect(function()
+   if infJumpEnabled then
+      local char = game.Players.LocalPlayer.Character
+      if char and char:FindFirstChildOfClass("Humanoid") then
+         char:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+      end
+   end
+end)
+
+-- 3. เดินทะลุกำแพง (Noclip)
+Tab:CreateToggle({
+   Name = "เดินทะลุกำแพง (Noclip)",
+   CurrentValue = false,
+   Callback = function(Value)
+      noclipEnabled = Value
+   end,
+})
+
+game:GetService("RunService").Stepped:Connect(function()
+   if noclipEnabled then
+      local char = game.Players.LocalPlayer.Character
+      if char then
+         for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+               part.CanCollide = false
+            end
+         end
+      end
+   end
+end)
+
+-- 4. มองทะลุ (ESP Player Highlight)
+Tab:CreateToggle({
+   Name = "มองทะลุตัวผู้เล่น (ESP)",
+   CurrentValue = false,
+   Callback = function(Value)
+      espEnabled = Value
+      for _, player in pairs(game.Players:GetPlayers()) do
+         if player ~= game.Players.LocalPlayer and player.Character then
+            if espEnabled then
+               if not player.Character:FindFirstChild("viksm_ESP") then
+                  local highlight = Instance.new("Highlight")
+                  highlight.Name = "viksm_ESP"
+                  highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                  highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                  highlight.Parent = player.Character
+               end
+            else
+               if player.Character:FindFirstChild("viksm_ESP") then
+                  player.Character.viksm_ESP:Destroy()
+               end
+            end
+         end
+      end
+   end,
+})
+
+-- Auto Loop Keep WalkSpeed Active
+game:GetService("RunService").Heartbeat:Connect(function()
+   if speedEnabled then
+      local char = game.Players.LocalPlayer.Character
+      if char and char:FindFirstChild("Humanoid") then
+         char.Humanoid.WalkSpeed = customWalkSpeed
+      end
+   end
+end)
+  
