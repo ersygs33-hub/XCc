@@ -1,0 +1,135 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- ระบบ Key System (Key: vip)
+local Window = Rayfield:CreateWindow({
+   Name = "key Hub | Driving Empire",
+   LoadingTitle = "key Script Loading...",
+   LoadingSubtitle = "by Assistant",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = true,
+   KeySettings = {
+      Title = "key Access System",
+      Subtitle = "Enter Access Key",
+      Note = "คีย์ผ่านเข้าใช้งานคือ: vip",
+      FileName = "keyConfig_DE",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"vip"} -- คีย์สำหรับเข้าใช้งาน
+   }
+})
+
+local Tab = Window:CreateTab("Main Features", 4483362458)
+
+-- Variables
+local customVehicleSpeed = 100
+local autoHeist = false
+
+-- 1. วาร์ปไปตู้ ATM (Teleport to ATM)
+Tab:CreateButton({
+   Name = "1. วาร์ปไปตู้ ATM (Teleport to ATM)",
+   Callback = function()
+      local player = game.Players.LocalPlayer
+      local char = player.Character
+      if char and char:FindFirstChild("HumanoidRootPart") then
+         -- ค้นหาตำแหน่งตู้ ATM ใน Map
+         local targetATM = nil
+         for _, obj in pairs(workspace:GetDescendants()) do
+            if obj.Name:lower():find("atm") then
+               if obj:IsA("BasePart") then
+                  targetATM = obj
+                  break
+               elseif obj:IsA("Model") and obj.PrimaryPart then
+                  targetATM = obj.PrimaryPart
+                  break
+               end
+            end
+         end
+         
+         if targetATM then
+            char.HumanoidRootPart.CFrame = targetATM.CFrame * CFrame.new(0, 3, 3)
+         else
+            -- พิกัดสำรองของตู้ ATM หลักในแมพ Driving Empire
+            char.HumanoidRootPart.CFrame = CFrame.new(-485, 25, 1250)
+         end
+      end
+   end,
+})
+
+-- 2. ความเร็วรถ (Vehicle Speed Multiplier - เลื่อนเลือกระดับและใช้ได้จริง)
+Tab:CreateSlider({
+   Name = "2. ปรับความเร็วรถ (Vehicle Speed Multiplier)",
+   Range = {100, 2000},
+   Increment = 50,
+   Suffix = " Power",
+   CurrentValue = 100,
+   Callback = function(Value)
+      customVehicleSpeed = Value
+   end,
+})
+
+-- ระบบดักจับการนั่งรถและเร่งความเร็วรถที่กำลังขับอยู่
+game:GetService("RunService").RenderStepped:Connect(function()
+   local player = game.Players.LocalPlayer
+   local char = player.Character
+   if char and char:FindFirstChild("Humanoid") then
+      local seat = char.Humanoid.SeatPart
+      if seat and seat:IsA("VehicleSeat") then
+         local vehicle = seat.Parent
+         -- เร่งความเร็วการหมุนล้อ/แรงบิดของรถ
+         seat.MaxSpeed = customVehicleSpeed
+         seat.Torque = customVehicleSpeed * 10
+         
+         -- เพิ่ม Velocity ล้อให้รถพุ่งเร็วขึ้นตามทิศทางที่กดขับ
+         if seat.ThrottleFloat ~= 0 then
+            seat.AssemblyLinearVelocity = seat.CFrame.LookVector * (seat.ThrottleFloat * (customVehicleSpeed / 2))
+         end
+      end
+   end
+end)
+
+-- 3. ขโมยตังค์ธนาคารอัตโนมัติ (Auto Bank Robbery / Heist)
+Tab:CreateToggle({
+   Name = "3. ขโมยตังค์ธนาคารอัตโนมัติ (Auto Rob Bank)",
+   CurrentValue = false,
+   Callback = function(Value)
+      autoHeist = Value
+      task.spawn(function()
+         while autoHeist do
+            task.wait(1)
+            local player = game.Players.LocalPlayer
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+               -- ค้นหาพื้นที่ธนาคาร/เซฟ (Bank Safe Vault)
+               local bankVault = nil
+               for _, v in pairs(workspace:GetDescendants()) do
+                  if v.Name:lower():find("vault") or v.Name:lower():find("bank") then
+                     if v:IsA("BasePart") then
+                        bankVault = v
+                        break
+                     end
+                  end
+               end
+               
+               if bankVault then
+                  -- วาร์ปเข้าไปในตู้เซฟธนาคาร
+                  char.HumanoidRootPart.CFrame = bankVault.CFrame * CFrame.new(0, 2, 0)
+                  task.wait(0.5)
+                  
+                  -- กดปุ่มปล้น/เก็บเงินอัตโนมัติ
+                  if fireproximityprompt then
+                     for _, prompt in pairs(bankVault:GetDescendants()) do
+                        if prompt:IsA("ProximityPrompt") then
+                           fireproximityprompt(prompt)
+                        end
+                     end
+                  end
+               else
+                  -- พิกัดสำรองของห้องเซฟธนาคารใน Driving Empire
+                  char.HumanoidRootPart.CFrame = CFrame.new(-1250, 18, 450)
+               end
+            end
+         end
+      end)
+   end,
+})
+  
