@@ -1,0 +1,199 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "vikmp Hub",
+   LoadingTitle = "vikmp Utilities",
+   LoadingSubtitle = "by Assistant",
+   ConfigurationSaving = { Enabled = false }
+})
+
+local Tab = Window:CreateTab("Main Features", 4483362458)
+
+-- Variables
+local speedEnabled = false
+local customWalkSpeed = 16
+local defaultWalkSpeed = 16
+
+local infJumpEnabled = false
+local espEnabled = false
+local headLockEnabled = false
+local playerLockEnabled = false
+local hitBoxEnabled = false
+local hitBoxSize = 5
+
+-- 1. วิ่งเร็ว (ปรับระดับตามต้องการ)
+Tab:CreateToggle({
+   Name = "1. เปิดระบบ วิ่งเร็ว (Speed)",
+   CurrentValue = false,
+   Callback = function(Value)
+      speedEnabled = Value
+      local char = game.Players.LocalPlayer.Character
+      if char and char:FindFirstChild("Humanoid") then
+         char.Humanoid.WalkSpeed = speedEnabled and customWalkSpeed or defaultWalkSpeed
+      end
+   end,
+})
+
+Tab:CreateInput({
+   Name = "ปรับระดับความเร็ว (WalkSpeed)",
+   PlaceholderText = "ใส่ค่าความเร็ว (เช่น 50, 100)...",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(Text)
+      local num = tonumber(Text)
+      if num then
+         customWalkSpeed = num
+         if speedEnabled then
+            local char = game.Players.LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+               char.Humanoid.WalkSpeed = customWalkSpeed
+            end
+         end
+      end
+   end,
+})
+
+-- 2. กระโดดไม่จำกัด (Infinite Jump)
+Tab:CreateToggle({
+   Name = "2. กระโดดไม่จำกัด (Infinite Jump)",
+   CurrentValue = false,
+   Callback = function(Value)
+      infJumpEnabled = Value
+   end,
+})
+
+game:GetService("UserInputService").JumpRequest:Connect(function()
+   if infJumpEnabled then
+      local char = game.Players.LocalPlayer.Character
+      if char and char:FindFirstChildOfClass("Humanoid") then
+         char:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+      end
+   end
+end)
+
+-- 3. มองทะลุ (ESP)
+Tab:CreateToggle({
+   Name = "3. มองทะลุตัวผู้เล่น (ESP)",
+   CurrentValue = false,
+   Callback = function(Value)
+      espEnabled = Value
+      for _, player in pairs(game.Players:GetPlayers()) do
+         if player ~= game.Players.LocalPlayer and player.Character then
+            if espEnabled then
+               if not player.Character:FindFirstChild("vikmp_ESP") then
+                  local highlight = Instance.new("Highlight")
+                  highlight.Name = "vikmp_ESP"
+                  highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                  highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                  highlight.Parent = player.Character
+               end
+            else
+               if player.Character:FindFirstChild("vikmp_ESP") then
+                  player.Character.vikmp_ESP:Destroy()
+               end
+            end
+         end
+      end
+   end,
+})
+
+-- 4. ล็อคหัว (Aimbot Head)
+Tab:CreateToggle({
+   Name = "4. ล็อคหัวผู้เล่น (Aimbot Head)",
+   CurrentValue = false,
+   Callback = function(Value)
+      headLockEnabled = Value
+   end,
+})
+
+-- 5. ขยายดาเมจ / ขยายระยะการโจมตี (Hitbox Expander)
+Tab:CreateToggle({
+   Name = "5. ขยายระยะโจมตี/ดาเมจ (Hitbox Expander)",
+   CurrentValue = false,
+   Callback = function(Value)
+      hitBoxEnabled = Value
+   end,
+})
+
+Tab:CreateInput({
+   Name = "ปรับขนาดระยะขยายดาเมจ",
+   PlaceholderText = "ใส่ขนาดระยะ (เช่น 10, 20)...",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(Text)
+      local num = tonumber(Text)
+      if num then
+         hitBoxSize = num
+      end
+   end,
+})
+
+-- 6. ล็อคตัวผู้เล่น (Target Lock / Teleport to Player)
+Tab:CreateToggle({
+   Name = "6. ล็อคตัวผู้เล่น (Follow Target)",
+   CurrentValue = false,
+   Callback = function(Value)
+      playerLockEnabled = Value
+   end,
+})
+
+-- Function ช่วยค้นหาผู้เล่นที่อยู่ใกล้ที่สุด
+local function getClosestPlayer()
+   local closest = nil
+   local shortestDistance = math.huge
+   local localPlayer = game.Players.LocalPlayer
+
+   for _, player in pairs(game.Players:GetPlayers()) do
+      if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+         local dist = (player.Character.HumanoidRootPart.Position - localPlayer.Character.HumanoidRootPart.Position).Magnitude
+         if dist < shortestDistance then
+            shortestDistance = dist
+            closest = player
+         end
+      end
+   end
+   return closest
+end
+
+-- Main Heartbeat Loop สำหรับระบบ Aimbot / Lock / Hitbox
+game:GetService("RunService").RenderStepped:Connect(function()
+   -- Auto WalkSpeed
+   if speedEnabled then
+      local char = game.Players.LocalPlayer.Character
+      if char and char:FindFirstChild("Humanoid") then
+         char.Humanoid.WalkSpeed = customWalkSpeed
+      end
+   end
+
+   local target = getClosestPlayer()
+   if target and target.Character then
+      -- 4. ล็อคหัว (หมุนมุมกล้องไปที่หัวของศัตรูใกล้สุด)
+      if headLockEnabled and target.Character:FindFirstChild("Head") then
+         workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, target.Character.Head.Position)
+      end
+
+      -- 6. ล็อคตัวผู้เล่น (วาร์ปติดตามหลังผู้เล่น)
+      if playerLockEnabled and target.Character:FindFirstChild("HumanoidRootPart") then
+         local char = game.Players.LocalPlayer.Character
+         if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+         end
+      end
+   end
+
+   -- 5. ทำงานของ Hitbox Expander
+   for _, player in pairs(game.Players:GetPlayers()) do
+      if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+         local hrp = player.Character.HumanoidRootPart
+         if hitBoxEnabled then
+            hrp.Size = Vector3.new(hitBoxSize, hitBoxSize, hitBoxSize)
+            hrp.Transparency = 0.7
+            hrp.BrickColor = BrickColor.new("Really red")
+            hrp.Material = Enum.Material.Neon
+            hrp.CanCollide = false
+         else
+            hrp.Size = Vector3.new(2, 2, 1)
+            hrp.Transparency = 1
+         end
+      end
+   end
+end)
+  
