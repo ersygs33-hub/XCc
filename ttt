@@ -1,0 +1,155 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- ระบบ Key System (Key: AS)
+local Window = Rayfield:CreateWindow({
+   Name = "nmk Hub | Fisch Script",
+   LoadingTitle = "nmk Script Loading...",
+   LoadingSubtitle = "by Assistant",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = true,
+   KeySettings = {
+      Title = "nmk Key System",
+      Subtitle = "Enter Access Key",
+      Note = "คีย์ผ่านเข้าใช้งานคือ: AS",
+      FileName = "nmkKeyConfig",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"AS"} -- คีย์สำหรับเข้าใช้งาน
+   }
+})
+
+local TabMain = Window:CreateTab("Main Features", 4483362458)
+local TabTP = Window:CreateTab("Island Teleports", 4483362458)
+
+-- Variables
+local autoFish = false
+local fullBar = false
+local infOxygen = false
+
+-- 1. ตกปลาอัตโนมัติ (1 วินาทีเสร็จสิ้น / Auto Reel & Shake)
+TabMain:CreateToggle({
+   Name = "1. ตกปลาอัตโนมัติ (Auto Fish 1 Sec)",
+   CurrentValue = false,
+   Callback = function(Value)
+      autoFish = Value
+      task.spawn(function()
+         while autoFish do
+            task.wait(0.5)
+            local player = game.Players.LocalPlayer
+            local char = player.Character
+            if char then
+               -- ดึงเบ็ดมาถือถ้ายังไม่ได้ถือ
+               local rod = char:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+               if rod and rod:FindFirstChild("events") then
+                  if rod.Parent == player.Backpack then
+                     char.Humanoid:EquipTool(rod)
+                  end
+                  -- เหวี่ยงเบ็ดอัตโนมัติ
+                  if rod.events:FindFirstChild("cast") then
+                     rod.events.cast:FireServer(100)
+                  end
+               end
+            end
+            -- ลูปกด Shake และ ดึงเบ็ด (Reel)
+            task.wait(0.5)
+            if autoFish then
+               local gui = player.PlayerGui
+               -- Auto Shake
+               if gui:FindFirstChild("shakeui") and gui.shakeui:FindFirstChild("safezone") then
+                  local btn = gui.shakeui.safezone:FindFirstChild("button")
+                  if btn then
+                     gui.shakeui.safezone.button.Size = UDim2.new(10, 0, 10, 0)
+                  end
+               end
+               -- Auto Reel Instant
+               local reeler = gui:FindFirstChild("reel")
+               if reeler and reeler:FindFirstChild("bar") then
+                  local remote = game:GetService("ReplicatedStorage"):FindFirstChild("events")
+                  if remote and remote:FindFirstChild("reelfinished") then
+                     remote.reelfinished:FireServer(100, true)
+                  end
+               end
+            end
+         end
+      end)
+   end,
+})
+
+-- 3. หลอดการจับปลาเต็มหลอด (Max Fishing Bar / Perfect Catch)
+TabMain:CreateToggle({
+   Name = "3. หลอดจับปลาเต็มหลอด (Full Bar / Perfect)",
+   CurrentValue = false,
+   Callback = function(Value)
+      fullBar = Value
+   end,
+})
+
+-- Loop บังคับให้ขนาดหลอดจับปลาเต็มหลอดตลอดเวลา
+game:GetService("RunService").RenderStepped:Connect(function()
+   if fullBar then
+      local player = game.Players.LocalPlayer
+      local reeler = player.PlayerGui:FindFirstChild("reel")
+      if reeler and reeler:FindFirstChild("bar") then
+         local playerbar = reeler.bar:FindFirstChild("playerbar")
+         if playerbar then
+            playerbar.Size = UDim2.new(1, 0, 1, 0) -- ขยายหลอดเข็มเต็ม 100%
+         end
+      end
+   end
+end)
+
+-- 4. ออกซิเจนไม่มีวันหมด (Infinite Oxygen)
+TabMain:CreateToggle({
+   Name = "4. ออกซิเจนไม่มีวันหมด (Infinite Oxygen)",
+   CurrentValue = false,
+   Callback = function(Value)
+      infOxygen = Value
+      task.spawn(function()
+         while infOxygen do
+            task.wait(0.5)
+            local char = game.Players.LocalPlayer.Character
+            if char and char:FindFirstChild("Oxygen") then
+               char.Oxygen.Value = 100
+            end
+            -- ป้องกันหลอดดำน้ำลดลงในระบบ PlayerGui
+            local clientData = game.Players.LocalPlayer:FindFirstChild("Character")
+            if clientData and clientData:FindFirstChild("BodyGui") and clientData.BodyGui:FindFirstChild("Oxygen") then
+               clientData.BodyGui.Oxygen.Value = 100
+            end
+         end
+      end)
+   end,
+})
+
+-- 2. วาร์ปไปเกาะต่างๆ (พิกัดเกาะทั้งหมดใน Map Fisch)
+local islands = {
+   ["Moosewood (เกาะเริ่มต้น)"] = Vector3.new(400, 135, 250),
+   ["Roslit Bay"] = Vector3.new(-1600, 130, 500),
+   ["Mushgrove Swamp"] = Vector3.new(2420, 135, -750),
+   ["Snowcap Island"] = Vector3.new(2625, 135, 2370),
+   ["Sunstone Island"] = Vector3.new(-870, 135, -1100),
+   ["Terrapin Island"] = Vector3.new(-95, 130, 1875),
+   ["Statue of Sovereignty"] = Vector3.new(35, 135, -1010),
+   ["Ancient Isle"] = Vector3.new(6000, 200, 300),
+   ["Forsaken Shore"] = Vector3.new(-2750, 130, 1450),
+   ["Desolate Deep"] = Vector3.new(-800, 130, -3100),
+   ["Grand Reef"] = Vector3.new(-3550, 130, 570),
+   ["Harvesters Spike"] = Vector3.new(-1260, 135, 1550),
+   ["The Arch"] = Vector3.new(1100, 130, -1250),
+   ["Birch Cay"] = Vector3.new(1650, 130, -2350),
+   ["Haddock Rock"] = Vector3.new(-500, 125, -505),
+   ["Earmark Island"] = Vector3.new(1200, 130, 530),
+   ["Keepers Altar"] = Vector3.new(1300, 130, -1250)
+}
+
+for name, pos in pairs(islands) do
+   TabTP:CreateButton({
+      Name = "วาร์ปไป " .. name,
+      Callback = function()
+         local char = game.Players.LocalPlayer.Character
+         if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = CFrame.new(pos)
+         end
+      end,
+   })
+end
