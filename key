@@ -1,0 +1,177 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- สร้างระบบ Key System (ใช้คีย์: key)
+local Window = Rayfield:CreateWindow({
+   Name = "key Hub | Steal Eggs",
+   LoadingTitle = "key Script Loading...",
+   LoadingSubtitle = "by Assistant",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = true,
+   KeySettings = {
+      Title = "key System",
+      Subtitle = "Enter the access key",
+      Note = "คีย์ผ่านเข้าใช้งานคือ: key",
+      FileName = "keyConfig",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"key"} -- คีย์สำหรับเข้าใช้งาน
+   }
+})
+
+local Tab = Window:CreateTab("Main Features", 4483362458)
+
+-- Variables
+local speedEnabled = false
+local customWalkSpeed = 100
+local defaultWalkSpeed = 16
+
+local flying = false
+local flySpeed = 50
+local flyConnection = nil
+
+local autoTreadmill = false
+local autoStealEgg = false
+
+-- 1. วาร์ปไปขโมยไข่แรร์/ไข่ (Auto Steal Rare Eggs)
+Tab:CreateToggle({
+   Name = "1. วาร์ปไปขโมยไข่ (Auto Steal Eggs)",
+   CurrentValue = false,
+   Callback = function(Value)
+      autoStealEgg = Value
+      task.spawn(function()
+         while autoStealEgg do
+            task.wait(0.5)
+            local char = game.Players.LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+               -- ค้นหาไข่ใน Workspace
+               for _, obj in pairs(workspace:GetDescendants()) do
+                  if autoStealEgg and (obj.Name:lower():find("rare") or obj.Name:lower():find("egg") or obj.Name:lower():find("brainrot")) then
+                     local targetPart = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+                     if targetPart then
+                        char.HumanoidRootPart.CFrame = targetPart.CFrame * CFrame.new(0, 3, 0)
+                        task.wait(0.5)
+                        -- กดปุ่ม E หรือปุ่มปฏิสัมพันธ์อัตโนมัติ
+                        if fireproximityprompt then
+                           local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+                           if prompt then fireproximityprompt(prompt) end
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end)
+   end,
+})
+
+-- 2. ลู่วิ่งอัตโนมัติ (Auto Treadmill / Auto Train)
+Tab:CreateToggle({
+   Name = "2. ลู่วิ่งอัตโนมัติ (Auto Treadmill)",
+   CurrentValue = false,
+   Callback = function(Value)
+      autoTreadmill = Value
+      task.spawn(function()
+         while autoTreadmill do
+            task.wait(0.1)
+            local char = game.Players.LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+               -- ค้นหาลู่วิ่งในเกม
+               for _, v in pairs(workspace:GetDescendants()) do
+                  if autoTreadmill and (v.Name:lower():find("treadmill") or v.Name:lower():find("run")) then
+                     local pad = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart")
+                     if pad then
+                        char.HumanoidRootPart.CFrame = pad.CFrame * CFrame.new(0, 3, 0)
+                     end
+                  end
+               end
+               -- กระโดด/เดินอัตโนมัติเพื่อปั๊มค่าลู่วิ่ง
+               if char:FindFirstChildOfClass("Humanoid") then
+                  char:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+               end
+            end
+         end
+      end)
+   end,
+})
+
+-- 3. ระบบบิน (Fly)
+Tab:CreateToggle({
+   Name = "3. เปิดใช้งานระบบบิน (Fly)",
+   CurrentValue = false,
+   Callback = function(Value)
+      flying = Value
+      local player = game.Players.LocalPlayer
+      local char = player.Character
+      if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+      local hrp = char.HumanoidRootPart
+
+      if flying then
+         local bv = Instance.new("BodyVelocity")
+         bv.Name = "key_FlyVelocity"
+         bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+         bv.Velocity = Vector3.zero
+         bv.Parent = hrp
+
+         local bg = Instance.new("BodyGyro")
+         bg.Name = "key_FlyGyro"
+         bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+         bg.CFrame = hrp.CFrame
+         bg.Parent = hrp
+
+         flyConnection = game:GetService("RunService").RenderStepped:Connect(function()
+            if flying and char:FindFirstChild("Humanoid") then
+               char.Humanoid.PlatformStand = true
+               local cam = workspace.CurrentCamera
+               local moveDir = char.Humanoid.MoveDirection
+               bv.Velocity = (cam.CFrame.LookVector * (moveDir.Z * -flySpeed)) + (cam.CFrame.RightVector * (moveDir.X * flySpeed))
+               bg.CFrame = cam.CFrame
+            end
+         end)
+      else
+         if flyConnection then flyConnection:Disconnect() end
+         if hrp:FindFirstChild("key_FlyVelocity") then hrp.key_FlyVelocity:Destroy() end
+         if hrp:FindFirstChild("key_FlyGyro") then hrp.key_FlyGyro:Destroy() end
+         if char:FindFirstChild("Humanoid") then char.Humanoid.PlatformStand = false end
+      end
+   end,
+})
+
+-- 4. วิ่งเร็ว (ปรับระดับตัวเลข 100 - 10000)
+Tab:CreateToggle({
+   Name = "4. เปิดระบบ วิ่งเร็ว (Speed)",
+   CurrentValue = false,
+   Callback = function(Value)
+      speedEnabled = Value
+      local char = game.Players.LocalPlayer.Character
+      if char and char:FindFirstChild("Humanoid") then
+         char.Humanoid.WalkSpeed = speedEnabled and customWalkSpeed or defaultWalkSpeed
+      end
+   end,
+})
+
+Tab:CreateSlider({
+   Name = "ปรับระดับความเร็ว (100 - 10000)",
+   Range = {100, 10000},
+   Increment = 50,
+   Suffix = "Speed",
+   CurrentValue = 100,
+   Callback = function(Value)
+      customWalkSpeed = Value
+      if speedEnabled then
+         local char = game.Players.LocalPlayer.Character
+         if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.WalkSpeed = customWalkSpeed
+         end
+      end
+   end,
+})
+
+-- Auto Loop รักษาค่าความเร็วเมื่อสปอว์นตัวใหม่
+game:GetService("RunService").Heartbeat:Connect(function()
+   if speedEnabled then
+      local char = game.Players.LocalPlayer.Character
+      if char and char:FindFirstChild("Humanoid") then
+         char.Humanoid.WalkSpeed = customWalkSpeed
+      end
+   end
+end)
